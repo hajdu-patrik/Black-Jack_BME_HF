@@ -27,7 +27,7 @@ public class Player implements Serializable {
 
         for (Card card : hand) {
             score += card.getValue();
-            if (card.getRank() == Card.Rank.ACE) {
+            if (card.getRank() == Rank.ACE) {
                 aceCount++;
             }
         }
