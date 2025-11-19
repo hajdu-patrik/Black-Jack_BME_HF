@@ -15,9 +15,9 @@ public class Deck implements Serializable {
 
     private void initializeDeck() {
         cards.clear();
-        for (Card.Suit suit : Card.Suit.values()) {
-            for (Card.Rank rank : Card.Rank.values()) {
-                cards.add(new Card(suit, rank));
+        for (Suit suit : Suit.values()) {
+            for (Rank rank : Rank.values()) {
+                this.cards.add(new Card(suit, rank));
             }
         }
         shuffle();
