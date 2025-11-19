@@ -4,7 +4,6 @@ import blackjack.logic.BlackjackGame;
 import java.io.*;
 
 public class SaveManager {
-
     // Relative path to the project root
     private static final String SAVE_FILE = "saves/gamestate.dat";
 

@@ -1,6 +1,5 @@
 # Gradle files
 .gradle/
-gradle/
 build/
 
 # Exception: The Wrapper JAR MUST be checked in so that others do not have to install it
