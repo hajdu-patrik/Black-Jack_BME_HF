@@ -1,0 +1,6 @@
+/*
+ * To build: ./gradlew build
+ * To run:   ./gradlew run
+ */
+
+rootProject.name = 'BlackjackGame'

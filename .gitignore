@@ -1,3 +1,32 @@
+# Gradle files
+.gradle/
+gradle/
+build/
+
+# Exception: The Wrapper JAR MUST be checked in so that others do not have to install it
+!gradle/wrapper/gradle-wrapper.jar
+
+# Java compilation artifacts
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# VS Code
+.vscode/
+
+# Never version control saves
+saves/
+*.dat
+students.dat
+gamestate.dat
+
 # Rejection of non-README.md documentations
 *.pdf
 *.docx
