@@ -1,4 +1,4 @@
-# ♠️ Blackjack Card Game (Java Swing)
+# Blackjack Card Game (Java Swing)
 
 ## 📋 Project Overview
 
