@@ -2,29 +2,30 @@
 
 ## 📋 Project Overview
 
-This project is an implementation of a multiplayer Blackjack (21) card game in Java with a graphical user interface (GUI) developed for the "Programming Fundamentals 3" course. Players play against a computer-controlled "Dealer" according to classic blackjack rules.
+**Blackjack Pro** is a robust, object-oriented implementation of the classic casino card game "Blackjack" (21), developed as a comprehensive software engineering project for the "Programming Fundamentals 3" course.
 
-The goal of the project is not only to implement the game, but also to demonstrate modern software development principles (OOP, MVC, SOLID) and tools (Gradle, JUnit).
+The application features a rich graphical user interface (GUI) built with **Java Swing** and adheres to modern software design principles (**MVC Architecture, SOLID, Clean Code**). Beyond the core gameplay, it includes advanced features like session persistence, historical statistics, and customizable game settings.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-### Gameplay:
-1. Start a new game with any name.
-2. Hit: Request a new card from the deck.
-3. Stand: End the round with the current score.
-4. Dealer AI: Automatic play (the Dealer must draw below 17 points).
-Instant result announcement (Win/Lose/Draw/Bust).
+### 🎮 Gameplay Mechanics
+- **Dynamic Game Setup:** Players can customize their name and choose between 1 or 2 card decks for varied difficulty.
+- **Core Actions:** Standard Hit (draw card) and Stand (hold position) mechanics.
+- **Smart Dealer:** Automated dealer logic adhering to casino rules (must hit on soft 16, stand on hard 17).
+- **Ace Handling:** Intelligent score calculation where Aces dynamically adjust between 1 and 11 points to prevent busting.
 
-### Interface:
-1. Swing-based graphical interface.
-2. Menu system for navigation.
-3. Visual display of cards and scores.
+### 🖥️ UI/UX Enhancements
+- **Swing GUI:** Responsive layout using BorderLayout and GridLayout.
+- **Visual Feedback:** Color-coded cards (Red/Black suits) and distinct panels for Dealer/Player.
+- **Enhanced UX:** Always-On-Top Dialogs: Critical game prompts (New Game, Game Over) force focus to ensure a smooth flow.
+- **Custom Application Icon:** Integrated native taskbar and window icon loaded from resources.
+- **Statistics Dashboard:** A dedicated window using JList to view detailed logs of the last 10 rounds (Winner, Scores, Hands).
 
-### Persistence:
-1. Saving the game state (.dat file).
-2. Loading and continuing a previous game state.
+### 💾 Persistence & Data
+- **Save/Load System:** Full game state serialization (gamestate.dat) allowing players to pause and resume sessions.
+- **Crash Recovery:** Robust file handling with error logging and user feedback.
 
 ---
 
@@ -48,11 +49,13 @@ BlackjackProject/
 │   │   │   └── blackjack/
 │   │   │       ├── Main.java
 │   │   │       ├── gui/
-│   │   │       │   └── GameFrame.java
+│   │   │       |   |── GameFrame.java 
+│   │   │       |   └── StatisticsFrame.java
 │   │   │       ├── io/
 │   │   │       │   └── SaveManager.java
 │   │   │       ├── logic/
-│   │   │       │   └── BlackjackGame.java
+│   │   │       |   |── BlackjackGame.java
+│   │   │       |   └── RoundResult.java
 │   │   │       └── model/
 │   │   │           ├── Card.java
 │   │   │           ├── Dealer.java
@@ -61,7 +64,7 @@ BlackjackProject/
 │   │   │           ├── Rank.java
 │   │   │           └── Suit.java
 │   │   └── resources/
-│   │       └── card_images/
+│   │       └── icon.png
 │   └── test/
 │       └── java/
 │           └── blackjack/
@@ -83,15 +86,17 @@ BlackjackProject/
 
 ## 💻 Installation and Running
 
-The project includes Gradle Wrapper, so there is no need to install Gradle in advance. Java Development Kit (JDK) 17 or later must be installed.
+The project includes the Gradle Wrapper, ensuring a consistent build environment without manual Gradle installation.
 
-### Steps
+#### Prerequisites
+Java JDK 21 (or newer) installed and configured in JAVA_HOME.
 
-#### Cloning/Downloading:
-Download the source code to your computer.
+#### 1. Clone the Repository
+```
+git clone repo-link
+```
 
-#### Compiling and Testing:
-Open a terminal in the project root and run:
+#### 2. Build the Project
 **Windows:**
 ```
 gradlew build
@@ -102,7 +107,7 @@ gradlew build
 ./gradlew build
 ```
 
-#### Running:
+#### 3. Run the game
 **Windows:**
 ```
 gradlew run
@@ -115,17 +120,23 @@ gradlew run
 
 ---
 
-## 🧪 Test Plan
+## 🧪 Testing Strategy
 
-The project contains unit tests for critical business logic using JUnit 5.
+The application maintains high test coverage using JUnit 5, focusing on business logic and edge cases.
 
-#### Running the tests:
+#### Key Test Cases:
+- **Deck Integrity:** Verifying card counts for 1-deck (52 cards) and 2-deck (104 cards) modes.
+- **Ace Logic:** Testing flexible scoring (e.g., Ace + King = 21, Ace + 5 + 10 = 16).
+- **Game Flow:** Simulating Player Bust, Dealer Bust, and Win/Loss conditions.
+- **Persistence:** Verifying that saved and reloaded game states are identical.
+
+#### Run the test
 **Windows:**
 ```
-gradlew test
+gradlew test --info
 ```
 
 **Linux/Mac:**
 ```
-./gradlew test
+./gradlew test -info
 ```
