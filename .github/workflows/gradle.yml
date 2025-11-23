@@ -40,6 +40,11 @@ jobs:
       if: runner.os != 'Windows'
       run: chmod +x ./gradlew
 
-    # 5. Compiling and testing
-    - name: Build with Gradle
-      run: ./gradlew build
+    # 5. Compiling and assembling the main code
+    - name: Compile and Assemble Code
+      run: ./gradlew assemble
+
+    # 6. Test running with immediate failure on errors
+    - name: Run All Tests and Verify Quality
+      run: ./gradlew check
+
