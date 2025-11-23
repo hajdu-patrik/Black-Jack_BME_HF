@@ -5,26 +5,37 @@ import blackjack.logic.RoundResult;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A dedicated JFrame to display the statistics history using a JList.
  */
 public class StatisticsFrame extends JFrame {
+    private static final int MAX_RESULTS_TO_SHOW = 10;
+    
     /**
      * Constructs the statistics window.
      * @param parent The parent frame.
      * @param history The list of results to display.
      */
     public StatisticsFrame(JFrame parent, List<RoundResult> history) {
-        setTitle("Last 10 rounds statistics");
-        setSize(600, 400);
+        setTitle("Last " + MAX_RESULTS_TO_SHOW + " rounds statistics");
+        setSize(600, 450);
+        setMinimumSize(new Dimension(550, 350));
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout());
 
+        int historySize = history.size();
+        List<RoundResult> limitedHistory = history.subList(
+                Math.max(0, historySize - MAX_RESULTS_TO_SHOW), 
+                historySize
+        );
+
         DefaultListModel<RoundResult> model = new DefaultListModel<>();
-        model.addAll(history);
-        
+        model.addAll(limitedHistory);
+
         JList<RoundResult> resultList = new JList<>(model);
+        resultList.setCellRenderer(new RoundResultRenderer());
         resultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resultList.setFont(new Font("Monospaced", Font.PLAIN, 14));
         
@@ -62,5 +73,41 @@ public class StatisticsFrame extends JFrame {
         );
 
         JOptionPane.showMessageDialog(this, details, "Round Details", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
+     * Custom ListCellRenderer to display RoundResult objects in a user-friendly format in the JList.
+     */
+    private class RoundResultRenderer extends DefaultListCellRenderer {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel renderer = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+            if (value instanceof RoundResult result) {
+                String winner = result.getWinner();
+                String text = String.format("Round %d: %s | Player: %d (%s) | Dealer: %d (%s)",
+                        index + 1,
+                        winner,
+                        result.getPlayerScore(),
+                        result.getPlayerHand().size() + " cards",
+                        result.getDealerScore(),
+                        result.getDealerHand().size() + " cards"
+                );
+                renderer.setText(text);
+
+                if (!isSelected) {
+                    if (winner.contains("Player")) {
+                        renderer.setBackground(new Color(150, 255, 150));
+                    } else if (winner.contains("Dealer")) {
+                        renderer.setBackground(new Color(255, 150, 150));
+                    } else {
+                        renderer.setBackground(new Color(255, 255, 150));
+                    }
+                }
+            }
+            return renderer;
+        }
     }
 }

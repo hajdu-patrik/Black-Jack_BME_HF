@@ -51,12 +51,29 @@ public class Card implements Serializable {
      */
     @Override
     public String toString() {
-        String symbol = switch (suit) {
-            case HEARTS -> "♥";
-            case DIAMONDS -> "♦";
-            case CLUBS -> "♣";
-            case SPADES -> "♠";
-        };
+        String symbol;
+
+        switch (suit) {
+            case HEARTS:
+                symbol = "♥";
+                break;
+
+            case DIAMONDS:
+                symbol = "♦";
+                break;
+
+            case CLUBS:
+                symbol = "♣";
+                break;
+
+            case SPADES:
+                symbol = "♠";
+                break;
+
+            default:
+                symbol = "";
+                break;
+        }
         return rank.name() + " " + symbol;
     }
 }

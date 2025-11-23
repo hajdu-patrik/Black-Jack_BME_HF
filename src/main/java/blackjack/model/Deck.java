@@ -75,7 +75,7 @@ public class Deck implements Serializable {
         if (cards.isEmpty()) {
             throw new IllegalStateException("The deck is empty! A new round must be started.");
         }
-        return cards.remove(0); // The top card is simply removed from the list
+        return cards.remove(0);
     }
 
     /**

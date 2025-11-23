@@ -33,6 +33,7 @@ public class GameFrame extends JFrame {
     private JLabel statusLabel;
     private JButton hitButton;
     private JButton standButton;
+    private StatisticsFrame statsWindow;
 
     // Constants for repeated strings
     private static final String DECK_SIZE_TITLE = "Deck Size";
@@ -61,7 +62,7 @@ public class GameFrame extends JFrame {
         setTitle("Blackjack - 21");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(800, 600);
-        setMinimumSize(new Dimension(600, 400));
+        setMinimumSize(new Dimension(700, 500));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
@@ -72,28 +73,39 @@ public class GameFrame extends JFrame {
         JMenuBar menuBar = createMenuBar();
         setJMenuBar(menuBar);
 
-        // --- Central Game Panel ---
+        // --- Info Panel (North) ---
+        JPanel infoPanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+
+        dealerScoreLabel = new JLabel("Dealer score: ?", SwingConstants.CENTER);
+        playerScoreLabel = new JLabel("Player score: ?", SwingConstants.CENTER);
+        statusLabel = new JLabel("Game status: Starting...", SwingConstants.CENTER);
+
+        Font scoreFont = new Font("SansSerif", Font.BOLD, 14);
+        dealerScoreLabel.setFont(scoreFont);
+        playerScoreLabel.setFont(scoreFont);
+        statusLabel.setFont(scoreFont);
+
+        infoPanel.add(dealerScoreLabel);
+        infoPanel.add(playerScoreLabel);
+        infoPanel.add(statusLabel);
+
+        add(infoPanel, BorderLayout.NORTH);
+
+        // --- Game Panel (Center) ---
         JPanel gamePanel = new JPanel(new GridLayout(2, 1, 10, 10));
         gamePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Dealer Panel (Top)
+        // Dealer Panel (Game Panel ---> Top)
         dealerPanel = new JPanel();
         dealerPanel.setBorder(BorderFactory.createTitledBorder("Dealer Cards"));
         dealerPanel.setBackground(new Color(20, 100, 50)); // Green table
-        dealerScoreLabel = new JLabel("Dealer score: ?");
-        dealerScoreLabel.setForeground(Color.WHITE);
-        dealerScoreLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        dealerPanel.add(dealerScoreLabel);
         gamePanel.add(dealerPanel);
 
-        // Player Panel (Bottom)
+        // Player Panel (Game Panel ---> Bottom)
         playerPanel = new JPanel();
         playerPanel.setBorder(BorderFactory.createTitledBorder("Player Cards"));
         playerPanel.setBackground(new Color(20, 100, 50));
-        playerScoreLabel = new JLabel("Score: 0");
-        playerScoreLabel.setForeground(Color.WHITE);
-        playerScoreLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        playerPanel.add(playerScoreLabel);
         gamePanel.add(playerPanel);
 
         add(gamePanel, BorderLayout.CENTER);
@@ -104,7 +116,6 @@ public class GameFrame extends JFrame {
         
         hitButton = new JButton("Hit");
         standButton = new JButton("Stand");
-        statusLabel = new JLabel("Welcome! Start the game with the 'New Game' menu or use the Hit/Stand buttons.");
 
         // Button event handlers
         hitButton.addActionListener(e -> handleHit());
@@ -113,7 +124,6 @@ public class GameFrame extends JFrame {
         controlPanel.add(hitButton);
         controlPanel.add(standButton);
         add(controlPanel, BorderLayout.SOUTH);
-        add(statusLabel, BorderLayout.NORTH);
     }
 
     /**
@@ -154,18 +164,22 @@ public class GameFrame extends JFrame {
      */
     private void createNewGame() {
         // 1. Player Name Input with Always-On-Top
-        JOptionPane namePane = new JOptionPane("Please enter your name!", JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null, null, null);
+        JOptionPane namePane = new JOptionPane(
+            "Please enter your name!",
+            JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.DEFAULT_OPTION,
+            null,
+            null,
+            null);
         namePane.setWantsInput(true);
         namePane.setInitialSelectionValue(DEFAULT_PLAYER_NAME);
         
-        JDialog nameDialog = namePane.createDialog(this, "Player Name");
-        nameDialog.setAlwaysOnTop(true); // CRITICAL: Forces dialog to top
-        nameDialog.setVisible(true);
-        nameDialog.dispose();
+        onTop(namePane, DECK_SIZE_TITLE, ABORT);
         
         Object nameInput = namePane.getInputValue();
         String playerName = (nameInput != null && nameInput != JOptionPane.UNINITIALIZED_VALUE) ? (String) nameInput : DEFAULT_PLAYER_NAME;
-        if (playerName.trim().isEmpty()) playerName = DEFAULT_PLAYER_NAME;
+        if (playerName.trim().isEmpty())
+            playerName = DEFAULT_PLAYER_NAME;
 
         // 2. Deck Size Selection with Always-On-Top
         Object[] options = {"1 deck", "2 decks"};
@@ -177,11 +191,8 @@ public class GameFrame extends JFrame {
             options, 
             options[0]
         );
-        
-        JDialog deckDialog = deckPane.createDialog(this, "Game settings");
-        deckDialog.setAlwaysOnTop(true); // CRITICAL: Forces dialog to top
-        deckDialog.setVisible(true);
-        deckDialog.dispose();
+
+        onTop(deckPane, "Game settings", JOptionPane.QUESTION_MESSAGE);
 
         Object selectedValue = deckPane.getValue();
         int deckCount = 1;
@@ -193,23 +204,37 @@ public class GameFrame extends JFrame {
     }
 
     /**
+     * Displays a JOptionPane dialog that is always on top of other windows.
+     * @param panel The JOptionPane to display.
+     * @param title The title of the dialog.
+     * @param messageType The type of message (e.g., INFORMATION_MESSAGE).
+     */
+    public void onTop(JOptionPane panel, String title, int messageType) {
+        JDialog dialog = panel.createDialog(this, title);
+        dialog.setAlwaysOnTop(true);
+        dialog.setVisible(true);
+        dialog.dispose();
+    }
+
+    /**
      * Creates and configures the JMenuBar with New Game, Save, Load, and Exit items.
      * @return The configured JMenuBar.
      */
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
+
         JMenu gameMenu = new JMenu("Menu");
-        JMenu statsMenu = new JMenu("Statistics");
-        
-        JMenuItem newItem = new JMenuItem("New Game");
+        JMenuItem newGame = new JMenuItem("New Game");
         JMenuItem deckSizeItem = new JMenuItem(DECK_SIZE_TITLE);
         JMenuItem saveItem = new JMenuItem("Save");
         JMenuItem loadItem = new JMenuItem("Load");
         JMenuItem exitItem = new JMenuItem("Exit");
+
+        JMenu statsMenu = new JMenu("Statistics");
         JMenuItem statsItem = new JMenuItem("Last (max 10) rounds statistics");
         
         // Event handling for menu items
-        newItem.addActionListener(e -> SwingUtilities.invokeLater(() -> {
+        newGame.addActionListener(e -> SwingUtilities.invokeLater(() -> {
             game.startNewRound();
             updateUI(); 
         }));
@@ -220,7 +245,7 @@ public class GameFrame extends JFrame {
         loadItem.addActionListener(e -> loadGame());
         exitItem.addActionListener(e -> System.exit(0));
 
-        gameMenu.add(newItem);
+        gameMenu.add(newGame);
         gameMenu.add(deckSizeItem);
         gameMenu.addSeparator();
         gameMenu.add(saveItem);
@@ -235,6 +260,20 @@ public class GameFrame extends JFrame {
         return menuBar;
     }
 
+    /**
+     * Displays a message dialog that is always on top of other windows.
+     * @param message The message to display.
+     * @param title The title of the dialog.
+     * @param messageType The type of message (e.g., INFORMATION_MESSAGE).
+     */
+    private void showAlwaysOnTopMessage(String message, String title, int messageType) {
+        JOptionPane pane = new JOptionPane(message, messageType);
+        JDialog dialog = pane.createDialog(this, title);
+        dialog.setAlwaysOnTop(true);
+        dialog.setVisible(true);
+        dialog.dispose();
+    }
+    
     /**
      * Handles the player's 'Hit' action, dealing a card and updating the UI.
      * If the game ends (player busts), displays the result message.
@@ -262,24 +301,11 @@ public class GameFrame extends JFrame {
     }
 
     /**
-     * Displays a message dialog that is always on top of other windows.
-     * @param message The message to display.
-     * @param title The title of the dialog.
-     * @param messageType The type of message (e.g., INFORMATION_MESSAGE).
-     */
-    private void showAlwaysOnTopMessage(String message, String title, int messageType) {
-        JOptionPane pane = new JOptionPane(message, messageType);
-        JDialog dialog = pane.createDialog(this, title);
-        dialog.setAlwaysOnTop(true);
-        dialog.setVisible(true);
-        dialog.dispose();
-    }
-    
-    /**
      * Updates the entire GUI state (cards, scores, controls) based on the current BlackjackGame model.
      */
     private void updateUI() {
-        if(game == null) return;
+        if(game == null)
+            return;
 
         // Update Player and Dealer hands
         // Dealer's second card is hidden until the game is over
@@ -396,10 +422,14 @@ public class GameFrame extends JFrame {
             return;
         }
         
-        // JList-et tartalmazó új ablak létrehozása
+        if (statsWindow != null)
+            statsWindow.dispose();
+
         StatisticsFrame statsFrame = new StatisticsFrame(this, history);
         statsFrame.setAlwaysOnTop(true);
         statsFrame.setVisible(true);
+
+        this.statsWindow = statsFrame;
     }
 
     /**
@@ -420,10 +450,7 @@ public class GameFrame extends JFrame {
             options[defaultIndex]
         );
         
-        JDialog dialog = pane.createDialog(this, DECK_SIZE_TITLE);
-        dialog.setAlwaysOnTop(true);
-        dialog.setVisible(true);
-        dialog.dispose();
+        onTop(pane, DECK_SIZE_TITLE, defaultIndex);
         
         Object selectedValue = pane.getValue();
         if (selectedValue == null) return;
@@ -459,12 +486,21 @@ public class GameFrame extends JFrame {
         try {
             BlackjackGame loadedGame = SaveManager.loadGame();
             this.game = loadedGame;
+        
+            if (statsWindow != null && statsWindow.isVisible()) {
+                statsWindow.dispose();
+                statsWindow = null;
             
-            // Update frame title and controls based on the loaded game state
+                showAlwaysOnTopMessage(
+                    "Game state loaded! Statistics window was closed to reflect new data. Please reopen it.", 
+                    "Loading successful", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                showAlwaysOnTopMessage("Game state loaded!", "Loading successful", JOptionPane.INFORMATION_MESSAGE);
+            }
+        
             setTitle("Blackjack - 21 (" + game.getPlayer().getName() + ")");
             setControls(!game.isGameOver()); 
-
-            showAlwaysOnTopMessage("Game state loaded!", "Loading successful", JOptionPane.INFORMATION_MESSAGE);
             updateUI();
         } catch (FileNotFoundException e) {
             showAlwaysOnTopMessage("Saved file not found at 'saves/gamestate.dat'.", ERROR_TITLE, JOptionPane.WARNING_MESSAGE);

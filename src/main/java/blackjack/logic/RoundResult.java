@@ -30,11 +30,35 @@ public class RoundResult implements Serializable {
         this.dealerHand = dealerHand;
     }
 
-    // Getters for display
+    
+    /**
+     * Returns the name of the winner.
+     * @return The winner's name.
+     */
     public String getWinner() { return winner; }
+
+    /**
+     * Returns the scores of the player.
+     * @return The player's score.
+     */
     public int getPlayerScore() { return playerScore; }
+
+    /**
+     * Returns the scores of the dealer.
+     * @return The dealer's score.
+     */
     public int getDealerScore() { return dealerScore; }
+
+    /**
+     * Returns the final hand of the player.
+     * @return The player's hand as a list of strings.
+     */
     public List<String> getPlayerHand() { return playerHand; }
+
+    /**
+     * Returns the final hand of the dealer.
+     * @return The dealer's hand as a list of strings.
+     */
     public List<String> getDealerHand() { return dealerHand; }
     
     /**
