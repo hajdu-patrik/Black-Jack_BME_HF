@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests the core game flow logic and winner determination.
  */
-public class BlackjackGameTest {
+class BlackjackGameTest {
 
     /**
      * Tests the game state at initialization.

@@ -5,7 +5,6 @@ import blackjack.logic.RoundResult;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A dedicated JFrame to display the statistics history using a JList.
