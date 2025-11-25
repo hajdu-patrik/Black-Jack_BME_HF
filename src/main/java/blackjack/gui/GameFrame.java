@@ -7,25 +7,46 @@ import blackjack.model.Player;
 import blackjack.logic.RoundResult;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The Swing-based graphical user interface (View) for the Blackjack game.
- * It handles displaying the game state, user input (Hit/Stand), and menu actions (Save/Load/New Game).
+ * The main application window for the Blackjack game.
+ * It manages the navigation between different views (Menu, Game, Statistics)
+ * and handles the interaction between the user interface and the game logic.
  */
 public class GameFrame extends JFrame {
-    // The main game logic/model
-    private BlackjackGame game;
 
-    // Logger for debugging and error messages
+    // Logger
     private static final Logger LOGGER = Logger.getLogger(GameFrame.class.getName());
-    
-    // UI components
+
+    // View Identifiers
+    private static final String VIEW_MENU = "Menu";
+    private static final String VIEW_GAME = "Game";
+    private static final String VIEW_STATS = "Statistics";
+
+    // UI Constants and Resources
+    private static final String DEFAULT_PLAYER_NAME = "Player";
+    private static final String DECK_SIZE_TITLE = "Deck Size";
+    private static final String BACK_TO_MENU_TEXT = "Back to Menu";
+    private static final String PLAY_AGAIN_TEXT = "Play Again";
+    private static final String SAVE_GAME_TEXT = "Save Game";
+    private static final String SANS_SERIF_FONT = "SansSerif";
+
+    // Game Data Model
+    private BlackjackGame game;
+    private BlackjackGame mainSessionGame;
+    private int selectedDeckSize = 1;
+
+    // Layout Components
+    private JPanel cardPanel;
+    private CardLayout cardLayout;
+
+    // Game View UI Components
     private JPanel dealerPanel;
     private JPanel playerPanel;
     private JLabel dealerScoreLabel;
@@ -33,101 +54,580 @@ public class GameFrame extends JFrame {
     private JLabel statusLabel;
     private JButton hitButton;
     private JButton standButton;
-    private StatisticsFrame statsWindow;
-
-    // Constants for repeated strings
-    private static final String DECK_SIZE_TITLE = "Deck Size";
-    private static final String ERROR_TITLE = "Error";
-    private static final String GAME_OVER_TITLE = "Game Over";
-    private static final String DEFAULT_PLAYER_NAME = "Player";
+    private JButton saveButton;
 
     /**
-     * Constructs the main game window. Prompts the user for a player name and initializes the UI.
+     * Constructs the main game window, initializes the frame properties,
+     * sets up the views, and displays the main menu.
      */
     public GameFrame() {
-        // We initialize UI first so the main frame exists (even if invisible) as a parent
-        initUI();
-        
-        // Now we show the setup dialogs ON TOP of everything
-        createNewGame();
-        
-        // Finally update the UI with the new game data
-        updateUI();
+        initMainFrame();
+        initViews();
+        showView(VIEW_MENU);
+
+        toFront();
+        requestFocus();
     }
 
     /**
-     * Initializes all Swing components, sets layout, dimensions, and adds event listeners.
+     * Initializes the main JFrame properties such as title, size, location, and layout manager.
      */
-    private void initUI() {
-        setTitle("Blackjack - 21");
+    private void initMainFrame() {
+        setTitle("Blackjack Pro");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(800, 600);
-        setMinimumSize(new Dimension(700, 500));
+        setSize(900, 700);
+        setMinimumSize(new Dimension(800, 600));
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
 
-        // --- Icon setup ---
         loadApplicationIcon();
 
-        // --- Menu ---
-        JMenuBar menuBar = createMenuBar();
-        setJMenuBar(menuBar);
+        cardLayout = new CardLayout();
+        cardPanel = new JPanel(cardLayout);
+        add(cardPanel);
+    }
 
-        // --- Info Panel (North) ---
+    /**
+     * Initializes and adds the primary views (Menu and Game) to the CardLayout.
+     */
+    private void initViews() {
+        cardPanel.add(createMenuPanel(), VIEW_MENU);
+        cardPanel.add(createGamePanel(), VIEW_GAME);
+    }
+
+    /**
+     * Creates the main menu panel containing navigation buttons and game settings.
+     * @return The constructed JPanel for the menu view.
+     */
+    private JPanel createMenuPanel() {
+        JPanel menuPanel = new JPanel();
+        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+        menuPanel.setBackground(new Color(40, 44, 52));
+        menuPanel.setBorder(new EmptyBorder(50, 50, 50, 50));
+
+        JLabel titleLabel = new JLabel("♠️ Blackjack Pro");
+        titleLabel.setFont(new Font("Serif", Font.BOLD, 48));
+        titleLabel.setForeground(new Color(97, 218, 251));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel welcomeLabel = new JLabel("Welcome! Press Start to play as '" + DEFAULT_PLAYER_NAME + "'.");
+        welcomeLabel.setFont(new Font(SANS_SERIF_FONT, Font.PLAIN, 18));
+        welcomeLabel.setForeground(Color.WHITE);
+        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JButton startButton = createStyledButton("Start Game", new Color(76, 175, 80));
+        startButton.addActionListener(e -> startGame());
+
+        JButton deckButton = createStyledButton(DECK_SIZE_TITLE, new Color(33, 150, 243));
+        deckButton.addActionListener(e -> changeDeckSize());
+
+        JButton statsButton = createStyledButton(VIEW_STATS, new Color(255, 152, 0));
+        statsButton.addActionListener(e -> showStatistics());
+
+        JButton loadButton = createStyledButton("Load Game", new Color(156, 39, 176));
+        loadButton.addActionListener(e -> loadGame());
+
+        JButton exitButton = createStyledButton("Exit", new Color(244, 67, 54));
+        exitButton.addActionListener(e -> System.exit(0));
+
+        menuPanel.add(titleLabel);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        menuPanel.add(welcomeLabel);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 50)));
+
+        menuPanel.add(startButton);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        menuPanel.add(deckButton);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        menuPanel.add(statsButton);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        menuPanel.add(loadButton);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        menuPanel.add(exitButton);
+
+        return menuPanel;
+    }
+
+    /**
+     * Creates a standardized, styled button with specific font, color, and size properties.
+     * @param text The text to display on the button.
+     * @param bgColor The background color of the button.
+     * @return The configured JButton instance.
+     */
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton btn = new JButton(text);
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn.setFont(new Font(SANS_SERIF_FONT, Font.BOLD, 16));
+        btn.setBackground(bgColor);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setMaximumSize(new Dimension(250, 50));
+        return btn;
+    }
+
+    /**
+     * Creates the main game interface panel, including the score board, card table, and controls.
+     * @return The constructed JPanel for the game view.
+     */
+    private JPanel createGamePanel() {
+        JPanel gameContainer = new JPanel(new BorderLayout(10, 10));
+        gameContainer.setBackground(new Color(20, 100, 50));
+
         JPanel infoPanel = new JPanel(new GridLayout(1, 3, 10, 10));
-        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+        infoPanel.setOpaque(false);
+        infoPanel.setBorder(new EmptyBorder(10, 10, 0, 10));
 
         dealerScoreLabel = new JLabel("Dealer score: ?", SwingConstants.CENTER);
-        playerScoreLabel = new JLabel("Player score: ?", SwingConstants.CENTER);
-        statusLabel = new JLabel("Game status: Starting...", SwingConstants.CENTER);
+        playerScoreLabel = new JLabel(DEFAULT_PLAYER_NAME + " score: 0", SwingConstants.CENTER);
+        statusLabel = new JLabel("Starting...", SwingConstants.CENTER);
 
-        Font scoreFont = new Font("SansSerif", Font.BOLD, 14);
-        dealerScoreLabel.setFont(scoreFont);
-        playerScoreLabel.setFont(scoreFont);
-        statusLabel.setFont(scoreFont);
+        styleLabel(dealerScoreLabel);
+        styleLabel(playerScoreLabel);
+        styleLabel(statusLabel);
 
         infoPanel.add(dealerScoreLabel);
         infoPanel.add(playerScoreLabel);
         infoPanel.add(statusLabel);
 
-        add(infoPanel, BorderLayout.NORTH);
+        gameContainer.add(infoPanel, BorderLayout.NORTH);
 
-        // --- Game Panel (Center) ---
-        JPanel gamePanel = new JPanel(new GridLayout(2, 1, 10, 10));
-        gamePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel tablePanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        tablePanel.setOpaque(false);
+        tablePanel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
-        // Dealer Panel (Game Panel ---> Top)
         dealerPanel = new JPanel();
-        dealerPanel.setBorder(BorderFactory.createTitledBorder("Dealer Cards"));
-        dealerPanel.setBackground(new Color(20, 100, 50)); // Green table
-        gamePanel.add(dealerPanel);
+        dealerPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.WHITE), "Dealer's Hand"));
+        dealerPanel.setOpaque(false);
+        ((javax.swing.border.TitledBorder)dealerPanel.getBorder()).setTitleColor(Color.WHITE);
 
-        // Player Panel (Game Panel ---> Bottom)
         playerPanel = new JPanel();
-        playerPanel.setBorder(BorderFactory.createTitledBorder("Player Cards"));
-        playerPanel.setBackground(new Color(20, 100, 50));
-        gamePanel.add(playerPanel);
+        playerPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.WHITE), "Your Hand"));
+        playerPanel.setOpaque(false);
+        ((javax.swing.border.TitledBorder)playerPanel.getBorder()).setTitleColor(Color.WHITE);
 
-        add(gamePanel, BorderLayout.CENTER);
+        tablePanel.add(dealerPanel);
+        tablePanel.add(playerPanel);
 
-        // --- Control Panel (South) ---
-        JPanel controlPanel = new JPanel();
-        controlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        
-        hitButton = new JButton("Hit");
-        standButton = new JButton("Stand");
+        gameContainer.add(tablePanel, BorderLayout.CENTER);
 
-        // Button event handlers
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 15));
+        controlPanel.setBackground(new Color(10, 50, 25));
+
+        hitButton = new JButton("HIT");
+        standButton = new JButton("STAND");
+        saveButton = new JButton(SAVE_GAME_TEXT);
+
+        JButton backToMenuButton = new JButton(BACK_TO_MENU_TEXT);
+
         hitButton.addActionListener(e -> handleHit());
         standButton.addActionListener(e -> handleStand());
+        saveButton.addActionListener(e -> saveGame());
+
+        backToMenuButton.addActionListener(e -> returnToMenu());
 
         controlPanel.add(hitButton);
         controlPanel.add(standButton);
-        add(controlPanel, BorderLayout.SOUTH);
+        controlPanel.add(saveButton);
+        controlPanel.add(backToMenuButton);
+
+        gameContainer.add(controlPanel, BorderLayout.SOUTH);
+
+        return gameContainer;
     }
 
     /**
-     * Loads the application icon from resources.
+     * Applies standard styling to status and score labels.
+     * @param label The JLabel to style.
+     */
+    private void styleLabel(JLabel label) {
+        label.setFont(new Font(SANS_SERIF_FONT, Font.BOLD, 18));
+        label.setForeground(Color.WHITE);
+    }
+
+    /**
+     * Switches the active view in the CardLayout container.
+     * @param viewName The name of the view to switch to.
+     */
+    private void showView(String viewName) {
+        cardLayout.show(cardPanel, viewName);
+    }
+
+    /**
+     * Returns the user to the main menu.
+     * If a main session is active, it restores that session, discarding any temporary loaded game state.
+     */
+    private void returnToMenu() {
+        if (this.mainSessionGame != null) {
+            this.game = this.mainSessionGame;
+            this.selectedDeckSize = this.mainSessionGame.getNumberOfDecks();
+        }
+        showView(VIEW_MENU);
+    }
+
+    /**
+     * Starts a new game round.
+     * If a main session already exists, it continues using it to preserve history.
+     * Otherwise, it initializes a new main session.
+     * Checks for immediate Blackjack after dealing.
+     */
+    private void startGame() {
+        if (this.mainSessionGame == null) {
+            this.mainSessionGame = new BlackjackGame(DEFAULT_PLAYER_NAME, selectedDeckSize);
+        } else {
+            this.mainSessionGame.setNumberOfDecks(selectedDeckSize);
+            this.mainSessionGame.startNewRound();
+        }
+
+        this.game = this.mainSessionGame;
+
+        showView(VIEW_GAME);
+        updateUI();
+
+        if (this.game.isGameOver()) {
+            SwingUtilities.invokeLater(this::handleGameOver);
+        }
+    }
+
+    /**
+     * Opens a dialog allowing the user to select the number of card decks (1 or 2).
+     */
+    private void changeDeckSize() {
+        Object[] options = {"1 deck", "2 decks"};
+        int defaultIndex = (selectedDeckSize == 2) ? 1 : 0;
+
+        int choice = JOptionPane.showOptionDialog(this,
+            "Select deck size (Current: " + selectedDeckSize + ")",
+            "Deck Configuration",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null, options, options[defaultIndex]);
+
+        if (choice == 0) selectedDeckSize = 1;
+        if (choice == 1) selectedDeckSize = 2;
+    }
+
+    /**
+     * Handles the player's action to hit (draw a card).
+     * Updates the UI and checks if the game is over (e.g., bust).
+     */
+    private void handleHit() {
+        if (game == null) return;
+        game.playerHit();
+        updateUI();
+
+        if (game.isGameOver()) {
+            handleGameOver();
+        }
+    }
+
+    /**
+     * Handles the player's action to stand.
+     * This ends the player's turn, triggers the dealer's turn, and ends the game.
+     */
+    private void handleStand() {
+        if (game == null) return;
+        game.playerStand();
+        updateUI();
+        handleGameOver();
+    }
+
+    /**
+     * Displays the game over dialog with options to play again, save the game, or return to the menu.
+     * If "Save Game" is selected, the dialog reappears after saving to allow further actions.
+     */
+    private void handleGameOver() {
+        setGameControlsEnabled(false);
+        String result = game.getGameResult();
+
+        JOptionPane pane = new JOptionPane(result + "\nWhat would you like to do?",
+            JOptionPane.INFORMATION_MESSAGE,
+            JOptionPane.YES_NO_CANCEL_OPTION,
+            null,
+            new Object[]{PLAY_AGAIN_TEXT, SAVE_GAME_TEXT, BACK_TO_MENU_TEXT},
+            PLAY_AGAIN_TEXT);
+
+        JDialog dialog = pane.createDialog(this, "Game Over");
+        dialog.setAlwaysOnTop(true);
+        dialog.setVisible(true);
+
+        Object selectedValue = pane.getValue();
+
+        if (PLAY_AGAIN_TEXT.equals(selectedValue)) {
+            game.startNewRound();
+            setGameControlsEnabled(true);
+            updateUI();
+
+            if (game.isGameOver()) {
+                SwingUtilities.invokeLater(this::handleGameOver);
+            }
+        } else if (SAVE_GAME_TEXT.equals(selectedValue)) {
+            saveGame();
+            handleGameOver();
+        } else if (BACK_TO_MENU_TEXT.equals(selectedValue)) {
+            returnToMenu();
+        }
+    }
+
+    /**
+     * Enables or disables the in-game control buttons (Hit/Stand).
+     * @param enabled True to enable controls, false to disable.
+     */
+    private void setGameControlsEnabled(boolean enabled) {
+        hitButton.setEnabled(enabled);
+        standButton.setEnabled(enabled);
+        saveButton.setEnabled(true);
+    }
+
+    /**
+     * Updates the game UI components (scores, hands, status) to reflect the current game state.
+     */
+    private void updateUI() {
+        if (game == null) return;
+
+        ((javax.swing.border.TitledBorder)playerPanel.getBorder()).setTitle(game.getPlayer().getName() + "'s Hand");
+
+        boolean showAllDealerCards = !game.isPlayerTurn() || game.isGameOver();
+
+        displayHand(dealerPanel, game.getDealer(), showAllDealerCards);
+        displayHand(playerPanel, game.getPlayer(), true);
+
+        String dScore = game.isGameOver() ? String.valueOf(game.getDealer().getScore()) : "?";
+        dealerScoreLabel.setText("Dealer score: " + dScore);
+
+        playerScoreLabel.setText(game.getPlayer().getName() + " score: " + game.getPlayer().getScore());
+
+        if (game.isGameOver())
+            statusLabel.setText(game.getGameResult());
+        else
+            statusLabel.setText(game.isPlayerTurn() ? "Your Turn!" : "Dealer's Turn!");
+
+        setGameControlsEnabled(game.isPlayerTurn() && !game.isGameOver());
+
+        repaint();
+        revalidate();
+    }
+
+    /**
+     * Renders the cards for a specific player in the specified panel.
+     * @param panel The JPanel where cards should be drawn.
+     * @param player The player (or dealer) whose hand is being displayed.
+     * @param showAll If true, all cards are revealed; if false, the dealer's hole card is hidden.
+     */
+    private void displayHand(JPanel panel, Player player, boolean showAll) {
+        panel.removeAll();
+        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+        List<Card> hand = player.getHand();
+
+        int limit;
+        if (showAll) {
+            limit = hand.size();
+        } else if (hand.isEmpty()) {
+            limit = 0;
+        } else {
+            limit = 1;
+        }
+
+        for (int i = 0; i < hand.size(); i++) {
+            Card card = hand.get(i);
+            boolean isVisible = (i < limit) || showAll;
+            panel.add(createCardLabel(card, isVisible));
+        }
+    }
+
+    /**
+     * Creates a visual component representing a playing card.
+     * @param card The card object containing rank and suit data.
+     * @param visible Whether the card face is visible or if it's face down.
+     * @return A JLabel representing the card.
+     */
+    private JLabel createCardLabel(Card card, boolean visible) {
+        JLabel label = new JLabel();
+        label.setPreferredSize(new Dimension(100, 140));
+        label.setOpaque(true);
+        label.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setFont(new Font("Serif", Font.BOLD, 20));
+
+        if (visible) {
+            label.setText("<html><center>" + card.toString().replace(" ", "<br>") + "</center></html>");
+            label.setBackground(Color.WHITE);
+            boolean isRed = card.getSuit() == blackjack.model.Suit.HEARTS || card.getSuit() == blackjack.model.Suit.DIAMONDS;
+            label.setForeground(isRed ? new Color(200, 0, 0) : Color.BLACK);
+        } else {
+            label.setText("?");
+            label.setBackground(new Color(139, 0, 0));
+            label.setForeground(Color.WHITE);
+        }
+        return label;
+    }
+
+    /**
+     * Displays the statistics view with the history of the last rounds.
+     * Requires at least one played round to function.
+     */
+    private void showStatistics() {
+        if (game == null) {
+             JOptionPane.showMessageDialog(this, "No active game found. Please play a game first.", "Stats Info", JOptionPane.INFORMATION_MESSAGE);
+             return;
+        }
+
+        List<RoundResult> history = game.getResultsHistory();
+
+        if (history.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Play at least 1 round to view statistics.",
+                "Missing Data",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JPanel statsContainer = new JPanel(new BorderLayout());
+        statsContainer.setBackground(new Color(40, 44, 52));
+
+        JLabel header = new JLabel("Match History (Last 10)");
+        header.setForeground(Color.WHITE);
+        header.setFont(new Font(SANS_SERIF_FONT, Font.BOLD, 24));
+        header.setHorizontalAlignment(SwingConstants.CENTER);
+        header.setBorder(new EmptyBorder(20, 0, 20, 0));
+        statsContainer.add(header, BorderLayout.NORTH);
+
+        DefaultListModel<RoundResult> listModel = new DefaultListModel<>();
+        listModel.addAll(history);
+
+        JList<RoundResult> list = new JList<>(listModel);
+        list.setCellRenderer(new RoundResultRenderer());
+        list.setFont(new Font("Monospaced", Font.PLAIN, 14));
+
+        list.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    int index = list.locationToIndex(evt.getPoint());
+                    if (index >= 0) {
+                        RoundResult r = list.getModel().getElementAt(index);
+                        showRoundDetails(r);
+                    }
+                }
+            }
+        });
+
+        statsContainer.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        JButton backButton = createStyledButton(BACK_TO_MENU_TEXT, new Color(33, 150, 243));
+        backButton.addActionListener(e -> returnToMenu());
+
+        JPanel btnPanel = new JPanel();
+        btnPanel.setOpaque(false);
+        btnPanel.add(backButton);
+        btnPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        statsContainer.add(btnPanel, BorderLayout.SOUTH);
+
+        cardPanel.add(statsContainer, VIEW_STATS);
+        showView(VIEW_STATS);
+    }
+
+    /**
+     * Shows detailed information for a specific round selected from the statistics list.
+     * @param result The RoundResult object containing the details.
+     */
+    private void showRoundDetails(RoundResult result) {
+        String details = String.format(
+            "<html>" +
+            "<h2>Round Result Details</h2>" +
+            "<b>Winner:</b> %s<br><br>" +
+            "<b>Player Score:</b> %d<br>" +
+            "<b>Player Hand:</b> %s<br><br>" +
+            "<b>Dealer Score:</b> %d<br>" +
+            "<b>Dealer Hand:</b> %s" +
+            "</html>",
+            result.getWinner(),
+            result.getPlayerScore(),
+            String.join(", ", result.getPlayerHand()),
+            result.getDealerScore(),
+            String.join(", ", result.getDealerHand())
+        );
+        JOptionPane.showMessageDialog(this, details, "Round Details", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
+     * Custom renderer for the statistics JList.
+     * Color-codes the rows based on the game result (Win/Loss/Tie).
+     */
+    private static class RoundResultRenderer extends DefaultListCellRenderer {
+        
+        /**
+         * Returns a component configured to display the specified value.
+         * Sets text and background color based on the round result.
+         */
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel renderer = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+            if (value instanceof RoundResult result) {
+                String winner = result.getWinner();
+                String text = String.format("Round %d: %s | Player: %d | Dealer: %d",
+                        index + 1,
+                        winner,
+                        result.getPlayerScore(),
+                        result.getDealerScore()
+                );
+                renderer.setText(text);
+
+                if (!isSelected) {
+                    if (winner.contains(DEFAULT_PLAYER_NAME) || (result.getPlayerScore() <= 21 && result.getDealerScore() > 21)) {
+                        renderer.setBackground(new Color(150, 255, 150));
+                    } else if (winner.contains("Dealer") || result.getPlayerScore() > 21) {
+                        renderer.setBackground(new Color(255, 150, 150));
+                    } else {
+                        renderer.setBackground(new Color(255, 255, 150));
+                    }
+                }
+            }
+            return renderer;
+        }
+    }
+
+    /**
+     * Saves the current game state using the SaveManager.
+     * Displays a success or error message via a popup dialog.
+     */
+    private void saveGame() {
+        if (game == null) {
+            JOptionPane.showMessageDialog(this, "No active game to save!");
+            return;
+        }
+        try {
+            SaveManager.saveGame(game);
+            JOptionPane.showMessageDialog(this, "Game state saved to: " + new File("saves/gamestate.dat").getAbsolutePath());
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Save failed", e);
+            JOptionPane.showMessageDialog(this, "Error saving game: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Loads a game state from the file system.
+     * The loaded game is treated as a temporary session.
+     * The main session (if any) is preserved and restored upon returning to the menu.
+     */
+    private void loadGame() {
+        try {
+            BlackjackGame loadedGame = SaveManager.loadGame();
+
+            this.game = loadedGame;
+            this.selectedDeckSize = loadedGame.getNumberOfDecks();
+
+            showView(VIEW_GAME);
+            updateUI();
+            JOptionPane.showMessageDialog(this, "Game Loaded (Temporary Session). Returning to menu will restore your main session.");
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Load failed", e);
+            JOptionPane.showMessageDialog(this, "Could not load game (File missing or corrupt).", "Error", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    /**
+     * Loads the application icon from the resources folder and sets it as the window icon.
      */
     private void loadApplicationIcon() {
         try {
@@ -138,375 +638,21 @@ public class GameFrame extends JFrame {
                 setTaskbarIcon(icon.getImage());
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error loading icon: {0}", e.getMessage());
+            LOGGER.warning("Icon load failed");
         }
     }
 
     /**
-     * Sets the taskbar icon if supported by the OS (e.g., macOS).
-     * @param image The image to set.
+     * Sets the application icon in the system taskbar (OS-dependent).
+     * @param image The image to use as the icon.
      */
     private void setTaskbarIcon(Image image) {
         if (Taskbar.isTaskbarSupported()) {
             try {
                 Taskbar.getTaskbar().setIconImage(image);
-            } catch (UnsupportedOperationException e) {
-                // System tray not supported on this platform, ignore quietly
-                LOGGER.log(Level.FINE, "Taskbar icon not supported: {0}", e.getMessage());
-            } catch (SecurityException e) {
-                LOGGER.log(Level.WARNING, "Security exception setting taskbar icon: {0}", e.getMessage());
+            } catch (Exception e) {
+                // Ignore platform specific errors
             }
-        }
-    }
-
-    /**
-     * Creates a new game instance using custom JDialogs to ensure they appear Always-On-Top.
-     */
-    private void createNewGame() {
-        // 1. Player Name Input with Always-On-Top
-        JOptionPane namePane = new JOptionPane(
-            "Please enter your name!",
-            JOptionPane.PLAIN_MESSAGE,
-            JOptionPane.DEFAULT_OPTION,
-            null,
-            null,
-            null);
-        namePane.setWantsInput(true);
-        namePane.setInitialSelectionValue(DEFAULT_PLAYER_NAME);
-        
-        onTop(namePane, DECK_SIZE_TITLE, ABORT);
-        
-        Object nameInput = namePane.getInputValue();
-        String playerName = (nameInput != null && nameInput != JOptionPane.UNINITIALIZED_VALUE) ? (String) nameInput : DEFAULT_PLAYER_NAME;
-        if (playerName.trim().isEmpty())
-            playerName = DEFAULT_PLAYER_NAME;
-
-        // 2. Deck Size Selection with Always-On-Top
-        Object[] options = {"1 deck", "2 decks"};
-        JOptionPane deckPane = new JOptionPane(
-            "How many decks would you like to play with?", 
-            JOptionPane.QUESTION_MESSAGE, 
-            JOptionPane.YES_NO_OPTION, 
-            null, 
-            options, 
-            options[0]
-        );
-
-        onTop(deckPane, "Game settings", JOptionPane.QUESTION_MESSAGE);
-
-        Object selectedValue = deckPane.getValue();
-        int deckCount = 1;
-        if (selectedValue != null && selectedValue.equals(options[1])) {
-            deckCount = 2;
-        }
-        
-        this.game = new BlackjackGame(playerName, deckCount);
-    }
-
-    /**
-     * Displays a JOptionPane dialog that is always on top of other windows.
-     * @param panel The JOptionPane to display.
-     * @param title The title of the dialog.
-     * @param messageType The type of message (e.g., INFORMATION_MESSAGE).
-     */
-    public void onTop(JOptionPane panel, String title, int messageType) {
-        JDialog dialog = panel.createDialog(this, title);
-        dialog.setAlwaysOnTop(true);
-        dialog.setVisible(true);
-        dialog.dispose();
-    }
-
-    /**
-     * Creates and configures the JMenuBar with New Game, Save, Load, and Exit items.
-     * @return The configured JMenuBar.
-     */
-    private JMenuBar createMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
-
-        JMenu gameMenu = new JMenu("Menu");
-        JMenuItem newGame = new JMenuItem("New Game");
-        JMenuItem deckSizeItem = new JMenuItem(DECK_SIZE_TITLE);
-        JMenuItem saveItem = new JMenuItem("Save");
-        JMenuItem loadItem = new JMenuItem("Load");
-        JMenuItem exitItem = new JMenuItem("Exit");
-
-        JMenu statsMenu = new JMenu("Statistics");
-        JMenuItem statsItem = new JMenuItem("Last (max 10) rounds statistics");
-        
-        // Event handling for menu items
-        newGame.addActionListener(e -> SwingUtilities.invokeLater(() -> {
-            game.startNewRound();
-            updateUI(); 
-        }));
-
-        statsItem.addActionListener(e -> showStatistics());
-        deckSizeItem.addActionListener(e -> selectDeckSize());
-        saveItem.addActionListener(e -> saveGame());
-        loadItem.addActionListener(e -> loadGame());
-        exitItem.addActionListener(e -> System.exit(0));
-
-        gameMenu.add(newGame);
-        gameMenu.add(deckSizeItem);
-        gameMenu.addSeparator();
-        gameMenu.add(saveItem);
-        gameMenu.add(loadItem);
-        gameMenu.addSeparator();
-        gameMenu.add(exitItem);
-        menuBar.add(gameMenu);
-        
-        statsMenu.add(statsItem);
-        menuBar.add(statsMenu);
-
-        return menuBar;
-    }
-
-    /**
-     * Displays a message dialog that is always on top of other windows.
-     * @param message The message to display.
-     * @param title The title of the dialog.
-     * @param messageType The type of message (e.g., INFORMATION_MESSAGE).
-     */
-    private void showAlwaysOnTopMessage(String message, String title, int messageType) {
-        JOptionPane pane = new JOptionPane(message, messageType);
-        JDialog dialog = pane.createDialog(this, title);
-        dialog.setAlwaysOnTop(true);
-        dialog.setVisible(true);
-        dialog.dispose();
-    }
-    
-    /**
-     * Handles the player's 'Hit' action, dealing a card and updating the UI.
-     * If the game ends (player busts), displays the result message.
-     */
-    private void handleHit() {
-        game.playerHit();
-        updateUI();
-        
-        if (game.isGameOver()) {
-            showAlwaysOnTopMessage(game.getGameResult(), GAME_OVER_TITLE, JOptionPane.INFORMATION_MESSAGE);
-            setControls(false); // Disable buttons
-        }
-    }
-
-    /**
-     * Handles the player's 'Stand' action, initiating the Dealer's turn and ending the game.
-     * Displays the final result message.
-     */
-    private void handleStand() {
-        game.playerStand();
-        updateUI();
-        
-        JOptionPane.showMessageDialog(this, game.getGameResult(), GAME_OVER_TITLE, JOptionPane.INFORMATION_MESSAGE);
-        setControls(false); // Disable buttons
-    }
-
-    /**
-     * Updates the entire GUI state (cards, scores, controls) based on the current BlackjackGame model.
-     */
-    private void updateUI() {
-        if(game == null)
-            return;
-
-        // Update Player and Dealer hands
-        // Dealer's second card is hidden until the game is over
-        displayHand(dealerPanel, game.getDealer(), !game.isPlayerTurn() || game.isGameOver());
-        displayHand(playerPanel, game.getPlayer(), true); 
-
-        // Update scores and status
-        updateScores();
-        
-        // Enable/disable buttons based on turn and game state
-        setControls(game.isPlayerTurn() && !game.isGameOver());
-
-        // Update the player panel title if the player name was loaded
-        ((javax.swing.border.TitledBorder)playerPanel.getBorder()).setTitle(game.getPlayer().getName() + " Cards");
-        
-        // Ensure the layout manager recalculates and repaints for the new cards
-        revalidate();
-        repaint();
-    }
-    
-    /**
-     * Clears a JPanel and draws the current set of cards for a player.
-     * This method handles hiding the Dealer's second card if the game is in progress.
-     * @param panel The JPanel where the cards will be displayed (Dealer or Player panel).
-     * @param player The Player or Dealer whose hand is displayed.
-     * @param showAll If true, all cards are shown; otherwise, only the first card is visible (for the Dealer).
-     */
-    private void displayHand(JPanel panel, Player player, boolean showAll) {
-        panel.removeAll();
-        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-
-        List<Card> hand = player.getHand();
-        int cardsToShow;
-        if (showAll) {
-            cardsToShow = hand.size();
-        } else if (hand.isEmpty()) {
-            cardsToShow = 0;
-        } else {
-            cardsToShow = 1;
-        }
-
-        for (int i = 0; i < hand.size(); i++) {
-            Card card = hand.get(i);
-            String cardText = (i < cardsToShow || showAll) ? card.toString() : "Back";
-            
-            JLabel cardLabel = new JLabel(cardText, SwingConstants.CENTER);
-            cardLabel.setPreferredSize(new Dimension(80, 110));
-            cardLabel.setOpaque(true);
-            
-            Color textColor = (card.getSuit() == blackjack.model.Suit.HEARTS || card.getSuit() == blackjack.model.Suit.DIAMONDS) ? Color.RED : Color.BLACK;
-
-            if (i < cardsToShow || showAll) {
-                cardLabel.setBackground(Color.WHITE);
-                cardLabel.setForeground(textColor);
-                cardLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
-                cardLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
-            } else {
-                cardLabel.setBackground(new Color(0, 51, 153));
-                cardLabel.setForeground(Color.YELLOW);
-                cardLabel.setBorder(BorderFactory.createLineBorder(Color.YELLOW, 2));
-                cardLabel.setFont(new Font("Monospaced", Font.BOLD, 12));
-                cardLabel.setText("BLACKJACK");
-            }
-            
-            panel.add(cardLabel);
-        }
-    }
-    
-    /**
-     * Updates the score labels and the general status message at the top of the frame.
-     */
-    private void updateScores() {
-        // Dealer's score is only shown when the game is over
-        String dealerScore = game.isGameOver() ? String.valueOf(game.getDealer().getScore()) : "?";
-        dealerScoreLabel.setText("Dealer score: " + dealerScore);
-        
-        // Player's score is always shown
-        playerScoreLabel.setText(game.getPlayer().getName() + " score: " + game.getPlayer().getScore());
-        
-        // Update status message
-        statusLabel.setText("Game status: " + getStatusMessage());
-    }
-
-    /**
-     * Generates a status message based on the current game state.
-     * @return A string representing the current status of the game.
-     */
-    private String getStatusMessage() {
-        if (game.isGameOver())
-            return game.getGameResult();
-        return game.isPlayerTurn() ? "Your turn!" : "Dealer's turn!";
-    }
-    
-    /**
-     * Enables or disables the Hit and Stand buttons.
-     * @param enabled true to enable the buttons, false to disable them.
-     */
-    private void setControls(boolean enabled) {
-        hitButton.setEnabled(enabled);
-        standButton.setEnabled(enabled);
-    }
-
-    /**
-     * Checks if the history contains at least 3 rounds and displays the statistics window (JList).
-     * Otherwise, shows a warning message.
-     */
-    private void showStatistics() {
-        List<RoundResult> history = game.getResultsHistory();
-        if (history.size() < 3) {
-            showAlwaysOnTopMessage(
-                "At least 3 rounds are required to view statistics. Current number of rounds: " + history.size(),
-                "Missing Data",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        if (statsWindow != null)
-            statsWindow.dispose();
-
-        StatisticsFrame statsFrame = new StatisticsFrame(this, history);
-        statsFrame.setAlwaysOnTop(true);
-        statsFrame.setVisible(true);
-
-        this.statsWindow = statsFrame;
-    }
-
-    /**
-     * The user to select the number of decks (1 or 2) and updates the game model accordingly.
-     * Restarts the current round with the new deck size.
-     */
-    private void selectDeckSize() {
-        Object[] options = {"1 deck", "2 decks"};
-        int current = Math.clamp(game.getNumberOfDecks(), 1, 2);
-        int defaultIndex = (current == 2) ? 1 : 0;
-
-        JOptionPane pane = new JOptionPane(
-            "Select number of decks (current: " + current + "):",
-            JOptionPane.QUESTION_MESSAGE,
-            JOptionPane.YES_NO_OPTION,
-            null,
-            options,
-            options[defaultIndex]
-        );
-        
-        onTop(pane, DECK_SIZE_TITLE, defaultIndex);
-        
-        Object selectedValue = pane.getValue();
-        if (selectedValue == null) return;
-
-        int selectedDecks = selectedValue.equals(options[1]) ? 2 : 1;
-        game.setNumberOfDecks(selectedDecks);
-
-        // Apply the change to the game model
-        game.setNumberOfDecks(selectedDecks);
-
-        showAlwaysOnTopMessage("Deck size set to " + selectedDecks + " deck(s).", DECK_SIZE_TITLE, JOptionPane.INFORMATION_MESSAGE);
-        game.startNewRound();
-        updateUI();
-    }
-
-    /**
-     * Initiates the game saving process using SaveManager and displays the result to the user.
-     */
-    private void saveGame() {
-        try {
-            SaveManager.saveGame(game);
-            // Using File().getAbsolutePath() to show the user where the file was saved
-            showAlwaysOnTopMessage("Game state saved to: " + new File("saves/gamestate.dat").getAbsolutePath(), "Save successful", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception e) {
-            showAlwaysOnTopMessage("Error during saving: " + e.getMessage(), ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    /**
-     * Initiates the game loading process using SaveManager, replaces the current game state, and updates the UI.
-     */
-    private void loadGame() {
-        try {
-            BlackjackGame loadedGame = SaveManager.loadGame();
-            this.game = loadedGame;
-        
-            if (statsWindow != null && statsWindow.isVisible()) {
-                statsWindow.dispose();
-                statsWindow = null;
-            
-                showAlwaysOnTopMessage(
-                    "Game state loaded! Statistics window was closed to reflect new data. Please reopen it.", 
-                    "Loading successful", 
-                    JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                showAlwaysOnTopMessage("Game state loaded!", "Loading successful", JOptionPane.INFORMATION_MESSAGE);
-            }
-        
-            setTitle("Blackjack - 21 (" + game.getPlayer().getName() + ")");
-            setControls(!game.isGameOver()); 
-            updateUI();
-        } catch (FileNotFoundException e) {
-            showAlwaysOnTopMessage("Saved file not found at 'saves/gamestate.dat'.", ERROR_TITLE, JOptionPane.WARNING_MESSAGE);
-        } catch (Exception e) {
-            showAlwaysOnTopMessage("Error during loading: " + e.getMessage(), ERROR_TITLE, JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
         }
     }
 }

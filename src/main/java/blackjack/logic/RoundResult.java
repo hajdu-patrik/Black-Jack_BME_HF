@@ -19,8 +19,8 @@ public class RoundResult implements Serializable {
      * @param winner The name of the winner ("Player" or "Dealer" or "Tie").
      * @param playerScore The final score of the player.
      * @param dealerScore The final score of the dealer.
-     * @param playerHand The final hand of the player (as descriptive strings).
-     * @param dealerHand The final hand of the dealer (as descriptive strings).
+     * @param playerHand The final hand of the player.
+     * @param dealerHand The final hand of the dealer.
      */
     public RoundResult(String winner, int playerScore, int dealerScore, List<String> playerHand, List<String> dealerHand) {
         this.winner = winner;
