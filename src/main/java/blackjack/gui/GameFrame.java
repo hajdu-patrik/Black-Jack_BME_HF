@@ -331,15 +331,46 @@ public class GameFrame extends JFrame {
     }
 
     /**
-     * Displays the game over dialog with options to play again, save the game, or return to the menu.
-     * If "Save Game" is selected, the dialog reappears after saving to allow further actions.
+     * Displays the game over dialog with a styled message matching the game's theme.
+     * The dialog provides options to play again, save the game, or return to the menu.
      */
     private void handleGameOver() {
         setGameControlsEnabled(false);
         String result = game.getGameResult();
 
-        JOptionPane pane = new JOptionPane(result + "\nWhat would you like to do?",
-            JOptionPane.INFORMATION_MESSAGE,
+        // Create a custom panel to replicate the visual style of the game (dark background)
+        JPanel msgPanel = new JPanel();
+        msgPanel.setLayout(new BoxLayout(msgPanel, BoxLayout.Y_AXIS));
+        msgPanel.setBackground(new Color(20, 100, 50));
+        msgPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        msgPanel.setOpaque(true);
+
+        JLabel resultLabel = new JLabel(result);
+        resultLabel.setFont(new Font(SANS_SERIF_FONT, Font.BOLD, 18));
+        resultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Apply consistent color coding
+        if (result.contains("won")) {
+            resultLabel.setForeground(Color.GREEN);
+        } else if (result.contains("lost")) {
+            resultLabel.setForeground(Color.RED);
+        } else if (result.contains("Tie")) {
+            resultLabel.setForeground(Color.YELLOW);
+        } else {
+            resultLabel.setForeground(Color.WHITE);
+        }
+
+        JLabel promptLabel = new JLabel("What would you like to do?");
+        promptLabel.setFont(new Font(SANS_SERIF_FONT, Font.PLAIN, 14));
+        promptLabel.setForeground(Color.WHITE);
+        promptLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        msgPanel.add(resultLabel);
+        msgPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        msgPanel.add(promptLabel);
+
+        JOptionPane pane = new JOptionPane(msgPanel,
+            JOptionPane.PLAIN_MESSAGE,
             JOptionPane.YES_NO_CANCEL_OPTION,
             null,
             new Object[]{PLAY_AGAIN_TEXT, SAVE_GAME_TEXT, BACK_TO_MENU_TEXT},
@@ -395,10 +426,23 @@ public class GameFrame extends JFrame {
 
         playerScoreLabel.setText(game.getPlayer().getName() + " score: " + game.getPlayer().getScore());
 
-        if (game.isGameOver())
-            statusLabel.setText(game.getGameResult());
-        else
+        if (game.isGameOver()) {
+            String result = game.getGameResult();
+            statusLabel.setText(result);
+            
+            if (result.contains("won")) {
+                statusLabel.setForeground(Color.GREEN);
+            } else if (result.contains("lost")) {
+                statusLabel.setForeground(Color.RED);
+            } else if (result.contains("Tie")) {
+                statusLabel.setForeground(Color.YELLOW);
+            } else {
+                statusLabel.setForeground(Color.WHITE);
+            }
+        } else {
             statusLabel.setText(game.isPlayerTurn() ? "Your Turn!" : "Dealer's Turn!");
+            statusLabel.setForeground(Color.WHITE);
+        }
 
         setGameControlsEnabled(game.isPlayerTurn() && !game.isGameOver());
 
