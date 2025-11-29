@@ -598,7 +598,6 @@ public class GameFrame extends JFrame {
      * Color-codes the rows based on the game result (Win/Loss/Tie).
      */
     private static class RoundResultRenderer extends DefaultListCellRenderer {
-        
         /**
          * Returns a component configured to display the specified value.
          * Sets text and background color based on the round result.
